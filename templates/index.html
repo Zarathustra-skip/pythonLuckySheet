@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket Demo</title>
+    <script type="text/javascript" src="//cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+    <script type="text/javascript" src="//cdn.bootcss.com/socket.io/1.5.1/socket.io.min.js"></script>
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css' />
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/plugins.css' />
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/css/luckysheet.css' />
+<link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/assets/iconfont/iconfont.css' />
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/js/plugin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/luckysheet.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="luckysheet" style="margin:0px;padding:0px;position:absolute;width:100%;height:100%;left: 0px;top: 0px;"></div>
+ <script>
+
+ $(document).ready(function () {
+
+     var namespace = '/test';
+     var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+     var change = -1;
+     socket.on('connect', function() {
+        socket.emit('my event', {data: 'date'});
+     });
+     socket.on('update', function(msg) {
+        change = 0
+        var r = eval('(' + msg + ')');
+        if (luckysheet.getCellValue(r.row, r.column) != r.newValue){
+            luckysheet.setCellValue(r.row, r.column, r.newValue)
+        }
+    });
+
+        //配置项
+
+        var options = {
+            lang: 'zh',
+            container: 'luckysheet', //luckysheet为容器id
+            userInfo: 'hello',
+            hook:{
+				cellUpdated:function(r,c,oldValue, newValue, isRefresh){
+				        var str =   '{' + '"row":' + r + ', "column":' + c + ', "oldValue":"' + oldValue +'", "newValue":"' + luckysheet.getCellValue(r,c) + '", "isRefresh":"' + isRefresh + '"}';
+				        if(change == 1)
+                            socket.emit('updater', {data: str});
+						    console.info('cellUpdated',r,c,oldValue, newValue, isRefresh)
+			    },
+                cellEditBefore:function(range ){
+                            change = 1;
+                            console.log('change:',change);
+							console.info(range);
+
+						},
+
+            },
+        }
+        luckysheet.create(options);
+    })
+</script>
+<h2>websocket 广播接收</h2>
+<div id="t"></div>
+
+
+</body>
+</html>
